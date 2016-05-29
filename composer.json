@@ -1,0 +1,23 @@
+{
+    "name": "dhii/stax",
+    "description": "A loading mechanism",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dhii Team",
+            "email": "development@dhii.co"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "5.3.*",
+        "mikey179/vfsStream": "~1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dhii\\Stax\\": "src/"
+        }
+    }
+}

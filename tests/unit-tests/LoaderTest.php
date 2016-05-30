@@ -16,6 +16,7 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
     const LOADER_NAMESPACE = 'Dhii\\Stax';
     const LOADER_CLASSNAME = self::LOADER_NAMESPACE . '\\Loader';
     const LOADER_INTERFACE = self::LOADER_NAMESPACE . '\\LoaderInterface';
+    const LOADER_NAME_ROOT = 'root';
     
     protected $vfs;
     
@@ -23,12 +24,20 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
      * @since [*next-version*]
      * @return \Dhii\Stax\Loader
      */
-    public function createInstance($paths = array())
+    public function createInstance($paths = array(), $name = null, $parent = null)
     {
         $className = static::LOADER_CLASSNAME;
-        $instance = new $className();
+        if (is_null($name)) {
+            $name = static::LOADER_NAME_ROOT;
+        }
+        $instance = new $className($name);
+        /* @var $instance \Dhii\Stax\Loader */
         foreach ($paths as $_path) {
             $instance->addPathToLoad($_path);
+        }
+        
+        if (!is_null($parent)) {
+            $instance->setParent($parent);
         }
         
         return $instance;
@@ -39,10 +48,11 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
      * @param type $methods
      * @return \Dhii\Stax\Loader
      */
-    public function createMock($methods = array())
+    public function createMock($methods = array(), $name = 'root')
     {
         $className = static::LOADER_CLASSNAME;
         $builder = $this->getMockBuilder($className);
+        $builder->setConstructorArgs([$name]);
         if (!empty($methods)) {
             $builder->setMethods($methods);
         }
@@ -300,5 +310,61 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
         ]));
         $this->expectOutputString('123345234456');
         $instance->load();
+    }
+    
+    /**
+     * Tests whether the name retrieved from a loader instance is same as that given to it when created.
+     * @since [*next-version*]
+     */
+    public function testGetName()
+    {
+        $instance = $this->createInstance([], static::LOADER_NAME_ROOT);
+        $this->assertSame(static::LOADER_NAME_ROOT, $instance->getName(), 'Loader name is not same as what it was instantiated with');
+    }
+    
+    /**
+     * Tests whether name sanitization removes all illegal characters, and nothing else.
+     * @since [*next-version*]
+     */
+    public function testSanitizeName()
+    {
+        $instance = $this->createInstance();
+        $name = ' loader /*^ @!#  $(*^ name  ';
+        $name = $instance->sanitizeName($name);
+        $this->assertSame('loadername', $name);
+    }
+    
+    /**
+     * Tests whether parent gets set correctly, and this relationship is reflected
+     * in the parent's children.
+     * @since [*next-version*]
+     */
+    public function testSetParentGetChildren()
+    {
+        $root = $this->createInstance();
+        $child1 = $this->createInstance([], 'child1')->setParent($root);
+        $child2 = $this->createInstance([], 'child2')->setParent($root);
+        $this->assertSame($root, $child1->getParent(), 'The first child\'s parent is wrong');
+        $this->assertSame($root, $child2->getParent(), 'The second child\'s parent is wrong');
+        $this->assertContains($child1, $root->getChildren(), 'The first child is not among the root laoder\'s children');
+        $this->assertContains($child2, $root->getChildren(), 'The second child is not among the root laoder\'s children');
+        $this->assertEquals(2, count($root->getChildren()), 'Root loader does not contain only two children');
+    }
+    
+    /**
+     * Tests whether children get added correctly, and a relationship is formed
+     * and reflected as the parent's children.
+     * @since [*next-version*]
+     */
+    public function testAddChildrenGetChildren()
+    {
+        $root = $this->createInstance();
+        $child1 = $this->createInstance([], 'child1');
+        $child2 = $this->createInstance([], 'child2');
+        $root->addChild($child1)
+                ->addChild($child2);
+        $this->assertContains($child1, $root->getChildren(), 'The first child is not among the root laoder\'s children');
+        $this->assertContains($child2, $root->getChildren(), 'The second child is not among the root laoder\'s children');
+        $this->assertEquals(2, count($root->getChildren()), 'Root loader does not contain only two children');
     }
 }

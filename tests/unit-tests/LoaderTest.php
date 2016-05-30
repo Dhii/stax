@@ -79,6 +79,8 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
             '2-a-module'        => [
                 '2-file.php'        => $this->getFileContentFromUid('345'),
                 '3-file.php'        => $this->getFileContentFromUid('456'),
+                '2.5-file.php'      => $this->getFileContentFromUid('678'),
+                '2.48-file.php'      => $this->getFileContentFromUid('789'),
                 'misc-folder'       => [
                     'just-a-file'       => $this->getFileContentFromUid('567')
                 ]
@@ -220,7 +222,9 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
         $files = $this->createInstance()->getDirFiles($this->addRootDir('2-a-module'));
         $this->assertEquals($this->addRootDir([
             '2-a-module/2-file.php',
-            '2-a-module/3-file.php'
+            '2-a-module/3-file.php',
+            '2-a-module/2.5-file.php',
+            '2-a-module/2.48-file.php'
         ]), $files, 'Files of directory listed incorrectly');
     }
     
@@ -230,7 +234,7 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
      */
     public function testLoadDir()
     {
-        $this->expectOutputString('345456');
+        $this->expectOutputString('345456678789');
         $this->createInstance()->loadDir($this->addRootDir('2-a-module'));
     }
     
@@ -240,7 +244,7 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
      */
     public function testLoadDirs()
     {
-        $this->expectOutputString('123234345456');
+        $this->expectOutputString('123234345456678789');
         $this->createInstance()->loadDirs($this->addRootDir([
             'example/8-my-other-module/',
             '2-a-module/'
@@ -269,12 +273,15 @@ class LoaderTest extends \PHPUnit_Framework_TestCase
     {
         $instance = $this->createMock(['getPathsToLoad']);
         $instance->method('getPathsToLoad')->willReturn($this->getPathsToLoad());
+        $files = $instance->getFilesToLoad();
         $this->assertEquals($this->addRootDir([
             'example/8-my-other-module/1-file.php',
             '2-a-module/2-file.php',
             'example/8-my-other-module/2-file.php',
+            '2-a-module/2.48-file.php',
+            '2-a-module/2.5-file.php',
             '2-a-module/3-file.php'
-        ]), $instance->getFilesToLoad(), 'Files to be loaded are incorrect');
+        ]), $files, 'Files to be loaded are incorrect');
     }
     
     /**

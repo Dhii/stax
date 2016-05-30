@@ -20,33 +20,19 @@ class Loader implements LoaderInterface
     
     public function addPathToLoad($path)
     {
-//        $path = $this->_beforeAddPathToLoad($path);
         if (isset($this->pathsToLoad[$path])) {
             return $this;
         }
         
         $this->pathsToLoad[$path] = 1;
-//        $this->_afterAddPathToLoad($path);
         
         return $this;
     }
-    
-//    protected function _beforeAddExprToLoad($path)
-//    {
-//        $path = $this->_sanitizePath($path);
-//        return $path;
-//    }
-    
-//    protected function _afterAddExprToLoad($path)
-//    {
-//        return $this;
-//    }
     
     public function sanitizePath($path)
     {
         $path = trim($path);
         $path = str_replace('\\/', DIRECTORY_SEPARATOR, $path);
-//        $path = rtrim($path, DIRECTORY_SEPARATOR);
         
         return $path;
     }
@@ -55,12 +41,29 @@ class Loader implements LoaderInterface
         return rtrim(rtrim($path), '/') . '/';
     }
     
+    protected function _floatCompare($a, $b)
+    {
+        if ($a === $b) {
+            return 0;
+        }
+        return $a < $b
+                ? -1
+                : 1;
+    }
+    
     public function sortPathsByBasename(&$paths)
     {
         usort($paths, function($pathA, $pathB) {
+            // We're sorting by basename; the path is irrelevant
             $baseA = basename($this->sanitizePath($pathA));
             $baseB = basename($this->sanitizePath($pathB));
-            return strnatcmp($baseA, $baseB);
+            // Order can be controlled by pre-pending a number - optionally fractional
+            $numA = floatval($baseA);
+            $numB = floatval($baseB);
+            // Attempt to sort numerically; if can't, then use natural sorting
+            return ($numA === $numB && $numB === 0)
+                    ? strnatcasecmp($baseA, $baseB)
+                    : $this->_floatCompare($baseA, $baseB);
         });
         
         return $this;
